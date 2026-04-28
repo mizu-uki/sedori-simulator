@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>中古せどり 利益シミュレーター</title>
+<meta name="theme-color" content="#4299e1">
+<meta name="description" content="店舗仕入れ時に利益・ROI・回転率を即計算">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="せどりシミュ">
+<style>
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Yu Gothic", sans-serif;
+    background: linear-gradient(135deg, #f5f7fa 0%, #e4e9f2 100%);
+    margin: 0;
+    padding: max(20px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(20px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+    min-height: 100vh;
+    color: #1a202c;
+    -webkit-tap-highlight-color: transparent;
+    -webkit-text-size-adjust: 100%;
+  }
+  .container {
+    max-width: 720px;
+    margin: 0 auto;
+  }
+  h1 {
+    font-size: 22px;
+    margin: 0 0 20px;
+    color: #2d3748;
+    text-align: center;
+  }
+  .card {
+    background: #fff;
+    border-radius: 14px;
+    padding: 22px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+    margin-bottom: 18px;
+  }
+  .card h2 {
+    font-size: 15px;
+    margin: 0 0 16px;
+    color: #4a5568;
+    border-left: 4px solid #4299e1;
+    padding-left: 10px;
+  }
+  .field {
+    display: flex;
+    align-items: center;
+    margin-bottom: 14px;
+    gap: 10px;
+  }
+  .field label {
+    flex: 0 0 180px;
+    font-size: 14px;
+    color: #2d3748;
+  }
+  .field .input-wrap {
+    flex: 1;
+    position: relative;
+  }
+  .field input {
+    width: 100%;
+    padding: 12px 40px 12px 12px;
+    font-size: 16px;
+    border: 1px solid #cbd5e0;
+    border-radius: 8px;
+    text-align: right;
+    transition: border-color 0.2s;
+    -moz-appearance: textfield;
+    background: #fff;
+  }
+  .field input::-webkit-outer-spin-button,
+  .field input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  .field input:focus {
+    outline: none;
+    border-color: #4299e1;
+    box-shadow: 0 0 0 3px rgba(66,153,225,0.15);
+  }
+  .field .unit {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #718096;
+    font-size: 13px;
+    pointer-events: none;
+  }
+  .results {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  .result-item {
+    background: #f7fafc;
+    padding: 14px;
+    border-radius: 10px;
+    border: 1px solid #e2e8f0;
+  }
+  .result-item.highlight {
+    background: linear-gradient(135deg, #ebf8ff 0%, #e6fffa 100%);
+    border-color: #4299e1;
+  }
+  .result-item.profit-positive {
+    background: linear-gradient(135deg, #f0fff4 0%, #e6fffa 100%);
+    border-color: #48bb78;
+  }
+  .result-item.profit-negative {
+    background: linear-gradient(135deg, #fff5f5 0%, #fed7d7 100%);
+    border-color: #f56565;
+  }
+  .result-label {
+    font-size: 12px;
+    color: #718096;
+    margin-bottom: 4px;
+  }
+  .result-value {
+    font-size: 22px;
+    font-weight: 700;
+    color: #2d3748;
+    letter-spacing: -0.5px;
+  }
+  .result-value .small {
+    font-size: 14px;
+    font-weight: 500;
+    color: #718096;
+    margin-left: 2px;
+  }
+  .result-item.profit-positive .result-value { color: #2f855a; }
+  .result-item.profit-negative .result-value { color: #c53030; }
+  .reset-btn {
+    width: 100%;
+    padding: 10px;
+    background: #edf2f7;
+    border: none;
+    border-radius: 8px;
+    color: #4a5568;
+    font-size: 13px;
+    cursor: pointer;
+    margin-top: 4px;
+    transition: background 0.2s;
+  }
+  .reset-btn:hover { background: #e2e8f0; }
+  .footnote {
+    font-size: 11px;
+    color: #a0aec0;
+    text-align: center;
+    margin-top: 8px;
+  }
+  @media (max-width: 520px) {
+    .field { flex-direction: column; align-items: stretch; gap: 4px; }
+    .field label { flex: none; }
+    .results { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>中古せどり 利益シミュレーター</h1>
+
+  <div class="card">
+    <h2>入力</h2>
+    <div class="field">
+      <label for="cost">仕入額</label>
+      <div class="input-wrap">
+        <input type="number" id="cost" inputmode="numeric" placeholder="0">
+        <span class="unit">円</span>
+      </div>
+    </div>
+    <div class="field">
+      <label for="price">想定販売額</label>
+      <div class="input-wrap">
+        <input type="number" id="price" inputmode="numeric" placeholder="0">
+        <span class="unit">円</span>
+      </div>
+    </div>
+    <div class="field">
+      <label for="shipping">送料・梱包費</label>
+      <div class="input-wrap">
+        <input type="number" id="shipping" inputmode="numeric" value="1000">
+        <span class="unit">円</span>
+      </div>
+    </div>
+    <div class="field">
+      <label for="feeRate">手数料率</label>
+      <div class="input-wrap">
+        <input type="number" id="feeRate" inputmode="decimal" value="10" step="0.1">
+        <span class="unit">%</span>
+      </div>
+    </div>
+    <div class="field">
+      <label for="days">想定販売日数</label>
+      <div class="input-wrap">
+        <input type="number" id="days" inputmode="numeric" placeholder="0">
+        <span class="unit">日</span>
+      </div>
+    </div>
+    <button class="reset-btn" id="resetBtn">リセット</button>
+  </div>
+
+  <div class="card">
+    <h2>シミュレーション結果</h2>
+    <div class="results">
+      <div class="result-item" id="profitBox">
+        <div class="result-label">利益額</div>
+        <div class="result-value"><span id="profit">¥0</span></div>
+      </div>
+      <div class="result-item highlight">
+        <div class="result-label">ROI</div>
+        <div class="result-value"><span id="roi">0.0</span><span class="small">%</span></div>
+      </div>
+      <div class="result-item">
+        <div class="result-label">粗利率</div>
+        <div class="result-value"><span id="margin">0.0</span><span class="small">%</span></div>
+      </div>
+      <div class="result-item">
+        <div class="result-label">損益分岐点（販売額）</div>
+        <div class="result-value"><span id="breakeven">¥0</span></div>
+      </div>
+      <div class="result-item">
+        <div class="result-label">回転率（月）</div>
+        <div class="result-value"><span id="turnover">0.00</span><span class="small">回/月</span></div>
+      </div>
+      <div class="result-item highlight">
+        <div class="result-label">月あたりの資金効率</div>
+        <div class="result-value"><span id="efficiency">0.0</span><span class="small">%/月</span></div>
+      </div>
+    </div>
+    <p class="footnote">※ 手数料は販売額に対して計算 / 損益分岐点 = (仕入額 + 送料) ÷ (1 − 手数料率)</p>
+  </div>
+</div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const inputs = ['cost', 'price', 'shipping', 'feeRate', 'days'];
+
+const fmtYen = (n) => {
+  if (!isFinite(n)) return '¥-';
+  const sign = n < 0 ? '-' : '';
+  return sign + '¥' + Math.round(Math.abs(n)).toLocaleString();
+};
+const fmtPct = (n, digits = 1) => isFinite(n) ? n.toFixed(digits) : '-';
+
+const STORAGE_KEY = 'sedori-sim-v1';
+
+function load() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+    inputs.forEach(id => {
+      if (saved[id] !== undefined && saved[id] !== '') $(id).value = saved[id];
+    });
+  } catch (e) {}
+}
+
+function save() {
+  const data = {};
+  inputs.forEach(id => data[id] = $(id).value);
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+}
+
+function calc() {
+  const cost = parseFloat($('cost').value) || 0;
+  const price = parseFloat($('price').value) || 0;
+  const shipping = parseFloat($('shipping').value) || 0;
+  const feeRate = (parseFloat($('feeRate').value) || 0) / 100;
+  const days = parseFloat($('days').value) || 0;
+
+  const fee = price * feeRate;
+  const profit = price - cost - shipping - fee;
+  const roi = cost > 0 ? (profit / cost) * 100 : NaN;
+  const margin = price > 0 ? (profit / price) * 100 : NaN;
+  const breakeven = (1 - feeRate) > 0 ? (cost + shipping) / (1 - feeRate) : NaN;
+  const turnover = days > 0 ? 30 / days : NaN;
+  const efficiency = (isFinite(roi) && isFinite(turnover)) ? roi * turnover : NaN;
+
+  $('profit').textContent = fmtYen(profit);
+  $('roi').textContent = fmtPct(roi);
+  $('margin').textContent = fmtPct(margin);
+  $('breakeven').textContent = fmtYen(breakeven);
+  $('turnover').textContent = isFinite(turnover) ? turnover.toFixed(2) : '-';
+  $('efficiency').textContent = fmtPct(efficiency);
+
+  const box = $('profitBox');
+  box.classList.remove('profit-positive', 'profit-negative');
+  if (price > 0 || cost > 0) {
+    box.classList.add(profit >= 0 ? 'profit-positive' : 'profit-negative');
+  }
+}
+
+inputs.forEach(id => {
+  $(id).addEventListener('input', () => { calc(); save(); });
+});
+
+$('resetBtn').addEventListener('click', () => {
+  $('cost').value = '';
+  $('price').value = '';
+  $('shipping').value = '1000';
+  $('feeRate').value = '10';
+  $('days').value = '';
+  calc();
+  save();
+});
+
+load();
+calc();
+
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  });
+}
+</script>
+</body>
+</html>
