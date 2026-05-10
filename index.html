@@ -17,21 +17,47 @@
     font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Yu Gothic", sans-serif;
     background: linear-gradient(135deg, #f5f7fa 0%, #e4e9f2 100%);
     margin: 0;
-    padding: max(20px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(20px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+    padding: 0 max(16px, env(safe-area-inset-right)) max(20px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
     min-height: 100vh;
     color: #1a202c;
     -webkit-tap-highlight-color: transparent;
     -webkit-text-size-adjust: 100%;
   }
-  .container {
+  .memo-bar {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    margin: 0 calc(-1 * max(16px, env(safe-area-inset-right))) 16px calc(-1 * max(16px, env(safe-area-inset-left)));
+    padding: calc(env(safe-area-inset-top) + 10px) max(16px, env(safe-area-inset-right)) 10px max(16px, env(safe-area-inset-left));
+    background: rgba(247, 250, 252, 0.92);
+    -webkit-backdrop-filter: saturate(180%) blur(14px);
+    backdrop-filter: saturate(180%) blur(14px);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  }
+  .memo-bar-inner {
     max-width: 720px;
     margin: 0 auto;
   }
-  h1 {
-    font-size: 22px;
-    margin: 0 0 20px;
+  .memo-bar input {
+    width: 100%;
+    padding: 9px 14px;
+    font-size: 14px;
+    border: 1px solid #cbd5e0;
+    border-radius: 8px;
+    background: #fff;
     color: #2d3748;
-    text-align: center;
+    font-family: inherit;
+  }
+  .memo-bar input::placeholder { color: #a0aec0; }
+  .memo-bar input:focus {
+    outline: none;
+    border-color: #4299e1;
+    box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.15);
+  }
+  .container {
+    max-width: 720px;
+    margin: 0 auto;
+    padding-top: 4px;
   }
   .card {
     background: #fff;
@@ -161,9 +187,12 @@
 </style>
 </head>
 <body>
+<div class="memo-bar">
+  <div class="memo-bar-inner">
+    <input type="text" id="memo" placeholder="商品タイトル（メモ）" autocomplete="off" enterkeyhint="done">
+  </div>
+</div>
 <div class="container">
-  <h1>中古せどり 利益シミュレーター</h1>
-
   <div class="card">
     <h2>入力</h2>
     <div class="field">
@@ -239,6 +268,7 @@
 <script>
 const $ = (id) => document.getElementById(id);
 const inputs = ['cost', 'price', 'shipping', 'feeRate', 'days'];
+const textInputs = ['memo'];
 
 const fmtYen = (n) => {
   if (!isFinite(n)) return '¥-';
@@ -252,7 +282,7 @@ const STORAGE_KEY = 'sedori-sim-v1';
 function load() {
   try {
     const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
-    inputs.forEach(id => {
+    [...inputs, ...textInputs].forEach(id => {
       if (saved[id] !== undefined && saved[id] !== '') $(id).value = saved[id];
     });
   } catch (e) {}
@@ -260,7 +290,7 @@ function load() {
 
 function save() {
   const data = {};
-  inputs.forEach(id => data[id] = $(id).value);
+  [...inputs, ...textInputs].forEach(id => data[id] = $(id).value);
   localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
 }
 
@@ -296,6 +326,12 @@ function calc() {
 inputs.forEach(id => {
   $(id).addEventListener('input', () => { calc(); save(); });
 });
+textInputs.forEach(id => {
+  $(id).addEventListener('input', save);
+});
+$('memo').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') $('memo').blur();
+});
 
 $('resetBtn').addEventListener('click', () => {
   $('cost').value = '';
@@ -303,6 +339,7 @@ $('resetBtn').addEventListener('click', () => {
   $('shipping').value = '1000';
   $('feeRate').value = '10';
   $('days').value = '';
+  $('memo').value = '';
   calc();
   save();
 });
